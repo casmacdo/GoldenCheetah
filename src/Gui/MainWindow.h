@@ -243,6 +243,7 @@ class MainWindow : public QMainWindow
         void downloadStravaRoutes();
         void manageLibrary();
         void showWorkoutWizard();
+        void showWorkoutGenerator();
         void importWorkout();
         void clearWorkoutFilterBox();
         void fillinWorkoutFilterBox(const QString &filterText);

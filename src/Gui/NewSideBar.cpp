@@ -23,6 +23,14 @@
 static constexpr int gl_itemwidth = 70;
 static constexpr int gl_itemheight = 50;
 static constexpr int gl_margin = 0;
+static constexpr int gl_iconsize = 24;
+static constexpr int gl_iconoffsetx = (gl_itemwidth - gl_iconsize) / 2;
+static constexpr int gl_iconoffsety = 6;
+static constexpr int gl_textoffsety = 24;
+static constexpr int gl_textheight = 20;
+static constexpr int gl_textmarginx = 5;
+static constexpr int gl_selectbar = 3;
+static constexpr int gl_fontsize = 12;
 
 NewSideBar::NewSideBar(QWidget *parent) : QWidget(parent)
 
@@ -247,8 +255,7 @@ NewSideBarItem::configChanged(qint32)
     // black the we're "light" so this controls palette
     bool dark = (fg_normal == QColor(Qt::white));
 
-    if (dark) fg_disabled = QColor(80,80,80);
-    else fg_disabled = QColor(180,180,180);
+    fg_disabled = GCColor::inactiveColor(fg_normal);
 
     // on select
     bg_select = GCColor::selectedColor(bg_normal);
@@ -258,11 +265,11 @@ NewSideBarItem::configChanged(qint32)
     bg_hover =GColor(CHOVER);
 
     iconNormal = QPixmap::fromImage(imageRGB(icon, fg_normal), Qt::ColorOnly|Qt::PreferDither|Qt::DiffuseAlphaDither);
-    iconNormal = iconNormal.scaled(24*dpiXFactor, 24*dpiXFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    iconNormal = iconNormal.scaled(gl_iconsize*dpiXFactor, gl_iconsize*dpiXFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     iconSelect = QPixmap::fromImage(imageRGB(icon, fg_select), Qt::ColorOnly|Qt::PreferDither|Qt::DiffuseAlphaDither);
-    iconSelect = iconSelect.scaled(24*dpiXFactor, 24*dpiXFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    iconSelect = iconSelect.scaled(gl_iconsize*dpiXFactor, gl_iconsize*dpiXFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     iconDisabled = QPixmap::fromImage(imageRGB(icon, fg_disabled), Qt::ColorOnly|Qt::PreferDither|Qt::DiffuseAlphaDither);
-    iconDisabled = iconDisabled.scaled(24*dpiXFactor, 24*dpiXFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    iconDisabled = iconDisabled.scaled(gl_iconsize*dpiXFactor, gl_iconsize*dpiXFactor, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 }
 
 void
@@ -277,20 +284,20 @@ NewSideBarItem::paintEvent(QPaintEvent *)
     painter.fillRect(QRectF(0,0,gl_itemwidth*dpiXFactor, gl_itemheight*dpiXFactor), brush);
 
     // icon is normal or disabled
-    if (selected) painter.drawPixmap(27*dpiXFactor,6*dpiXFactor,24*dpiXFactor,24*dpiXFactor,iconSelect);
-    else if (enabled) painter.drawPixmap(27*dpiXFactor,6*dpiXFactor,24*dpiXFactor,24*dpiXFactor,iconNormal);
-    else painter.drawPixmap(27*dpiXFactor,6*dpiXFactor,24*dpiXFactor,24*dpiXFactor,iconDisabled);
+    if (selected) painter.drawPixmap(gl_iconoffsetx*dpiXFactor,gl_iconoffsety*dpiXFactor,gl_iconsize*dpiXFactor,gl_iconsize*dpiXFactor,iconSelect);
+    else if (enabled) painter.drawPixmap(gl_iconoffsetx*dpiXFactor,gl_iconoffsety*dpiXFactor,gl_iconsize*dpiXFactor,gl_iconsize*dpiXFactor,iconNormal);
+    else painter.drawPixmap(gl_iconoffsetx*dpiXFactor,gl_iconoffsety*dpiXFactor,gl_iconsize*dpiXFactor,gl_iconsize*dpiXFactor,iconDisabled);
 
-    // block
-    if (selected) painter.fillRect(QRectF(0,0,3*dpiXFactor,gl_itemheight*dpiXFactor), QBrush(GColor(CPLOTMARKER)));
+    // selection indicator bar
+    if (selected) painter.fillRect(QRectF(0,0,gl_selectbar*dpiXFactor,gl_itemheight*dpiXFactor), QBrush(GColor(CPLOTMARKER)));
 
     // draw name
     QPen pen(fg_normal);
     if (!enabled) pen = QPen(fg_disabled);
     if (selected) pen = fg_select;
     QFont f;
-    f.setPixelSize(12*dpiYFactor);
+    f.setPixelSize(gl_fontsize*dpiYFactor);
     painter.setFont(f);
     painter.setPen(pen);
-    painter.drawText(QRect(5*dpiXFactor,24*dpiYFactor,(gl_itemwidth-5)*dpiXFactor,20*dpiYFactor), Qt::AlignCenter| Qt::AlignBottom, name);
+    painter.drawText(QRect(gl_textmarginx*dpiXFactor,gl_textoffsety*dpiYFactor,(gl_itemwidth-gl_textmarginx)*dpiXFactor,gl_textheight*dpiYFactor), Qt::AlignCenter| Qt::AlignBottom, name);
 }

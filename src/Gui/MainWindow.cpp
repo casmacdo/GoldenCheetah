@@ -70,6 +70,7 @@
 #include "BatchProcessingDialog.h"
 #include "MeasuresDownload.h"
 #include "WorkoutWizard.h"
+#include "WorkoutGeneratorDialog.h"
 #include "TrainerDayDownloadDialog.h"
 #include "AddDeviceWizard.h"
 #include "Dropbox.h"
@@ -130,7 +131,16 @@ extern QString gl_version;
 extern double gl_major; // 1.x 2.x 3.x - we insist on 2.x or higher to enable OpenGL
 
 // constants for gui
-static int gl_toolheight=28;
+static constexpr int gl_toolheight = 28;
+static constexpr int gl_iconsize = 16;
+static constexpr int gl_perspectivewidth = 200;
+static constexpr int gl_searchwidth = 400;
+static constexpr int gl_toolspacing = 5;
+#ifdef Q_OS_MAC
+static constexpr int gl_toolpadding = 40; // extra breathing space with no menu bar
+#else
+static constexpr int gl_toolpadding = 16;
+#endif
 
 MainWindow::MainWindow(const QDir &home)
 {
@@ -237,8 +247,8 @@ MainWindow::MainWindow(const QDir &home)
     sidebar->addItem(QImage(":sidebar/train.png"), tr("train"), GcSideBarBtnId::TRAIN_BTN, helpNewSideBar->getWhatsThisText(HelpWhatsThis::ScopeBar_Train));
 
     sidebar->addStretch();
-    sidebar->addItem(QImage(":sidebar/apps.png"), tr("apps"), GcSideBarBtnId::APPS_BTN, tr("Feature not implemented yet"));
-    sidebar->setItemEnabled(GcSideBarBtnId::APPS_BTN, false);
+    sidebar->addItem(QImage(":sidebar/apps.png"), tr("apps"), GcSideBarBtnId::APPS_BTN, tr("Generate AI Workouts"));
+    sidebar->setItemSelectable(GcSideBarBtnId::APPS_BTN, false);
     sidebar->addStretch();
 
     // we can click on the quick icons, but they aren't selectable views
@@ -278,7 +288,7 @@ MainWindow::MainWindow(const QDir &home)
     backIcon = iconFromPNG(":images/mac/back.png");
     whatIcon = iconFromPNG(":images/titlebar/whatsthis.png");
     forwardIcon = iconFromPNG(":images/mac/forward.png");
-    QSize isize(16 *dpiXFactor,16 *dpiYFactor);
+    QSize isize(gl_iconsize *dpiXFactor, gl_iconsize *dpiYFactor);
 
     back = new QPushButton(this);
     back->setIcon(backIcon);
@@ -346,7 +356,7 @@ MainWindow::MainWindow(const QDir &home)
     // Perspective selector
     perspectiveSelector = new QComboBox(this);
     perspectiveSelector->setStyle(toolStyle);
-    perspectiveSelector->setFixedWidth(200 * dpiXFactor);
+    perspectiveSelector->setFixedWidth(gl_perspectivewidth * dpiXFactor);
     perspectiveSelector->setFixedHeight(gl_toolheight * dpiYFactor);
     connect(perspectiveSelector, SIGNAL(currentIndexChanged(int)), this, SLOT(perspectiveSelected(int)));
     HelpWhatsThis *helpPerspectiveSelector = new HelpWhatsThis(perspectiveSelector);
@@ -356,32 +366,28 @@ MainWindow::MainWindow(const QDir &home)
     searchBox = new SearchFilterBox(this,context,false);
 
     searchBox->setStyle(toolStyle);
-    searchBox->setFixedWidth(400 * dpiXFactor);
+    searchBox->setFixedWidth(gl_searchwidth * dpiXFactor);
     searchBox->setFixedHeight(gl_toolheight * dpiYFactor);
 
     // Workout Filter Box
     workoutFilterBox = new WorkoutFilterBox(this, context);
 
     workoutFilterBox->setStyle(toolStyle);
-    workoutFilterBox->setFixedWidth(400 * dpiXFactor);
+    workoutFilterBox->setFixedWidth(gl_searchwidth * dpiXFactor);
     workoutFilterBox->setFixedHeight(gl_toolheight * dpiYFactor);
     HelpWhatsThis *helpWorkoutFilterBox = new HelpWhatsThis(workoutFilterBox);
     workoutFilterBox->setWhatsThis(helpWorkoutFilterBox->getWhatsThisText(HelpWhatsThis::ToolBar_WorkoutFilterBox));
 
     QWidget *space = new QWidget(this);
     space->setAutoFillBackground(false);
-    space->setFixedWidth(5 * dpiYFactor);
+    space->setFixedWidth(gl_toolspacing * dpiYFactor);
 
     head->addWidget(space);
     head->addWidget(back);
     head->addWidget(forward);
     head->addWidget(perspectiveSelector);
     head->addStretch();
-#ifdef Q_OS_MAC // no menu on mac, so lets have some breathing space
-    head->setFixedHeight(searchBox->height() + (20 *dpiXFactor * 2));
-#else
-    head->setFixedHeight(searchBox->height() + (16 *dpiXFactor));
-#endif
+    head->setFixedHeight(searchBox->height() + (gl_toolpadding * dpiXFactor));
 
     connect(searchBox, SIGNAL(searchResults(QStringList)), this, SLOT(setFilter(QStringList)));
     connect(searchBox, SIGNAL(searchClear()), this, SLOT(clearFilter()));
@@ -391,17 +397,17 @@ MainWindow::MainWindow(const QDir &home)
     head->addWidget(searchBox);
     head->addWidget(workoutFilterBox);
     space = new Spacer(this);
-    space->setFixedWidth(5 *dpiYFactor);
+    space->setFixedWidth(gl_toolspacing *dpiYFactor);
     head->addWidget(space);
     head->addWidget(sidelist);
     head->addWidget(lowbar);
     head->addWidget(tabtile);
     space = new Spacer(this);
-    space->setFixedWidth(5 *dpiYFactor);
+    space->setFixedWidth(gl_toolspacing *dpiYFactor);
     head->addWidget(space);
     head->addWidget(whatsthis);
     space = new Spacer(this);
-    space->setFixedWidth(5 *dpiYFactor);
+    space->setFixedWidth(gl_toolspacing *dpiYFactor);
     head->addWidget(space);
 
 #ifdef Q_OS_LINUX
@@ -1203,6 +1209,13 @@ void MainWindow::showWorkoutWizard()
    ww->show();
 }
 
+void MainWindow::showWorkoutGenerator()
+{
+    WorkoutGeneratorDialog *dlg = new WorkoutGeneratorDialog(currentAthleteTab->context);
+    dlg->setAttribute(Qt::WA_DeleteOnClose);
+    dlg->show();
+}
+
 void MainWindow::resetWindowLayout()
 {
     QMessageBox msgBox;
@@ -1266,6 +1279,7 @@ MainWindow::sidebarClicked(GcSideBarBtnId id)
     switch (id) {
     case GcSideBarBtnId::SYNC_BTN: checkCloud(); break; // sync quick link
     case GcSideBarBtnId::OPTIONS_BTN: showOptions(); break; // prefs
+    case GcSideBarBtnId::APPS_BTN: showWorkoutGenerator(); break;
 
     default: break;
     }
@@ -1281,7 +1295,7 @@ MainWindow::sidebarSelected(GcSideBarBtnId id)
     case GcSideBarBtnId::ACTIVITIES_BTN: selectAnalysis(); break;
     case GcSideBarBtnId::REFLECT_BTN: break; // reflect not written yet
     case GcSideBarBtnId::TRAIN_BTN: selectTrain(); break;
-    case GcSideBarBtnId::APPS_BTN: break;// apps not written yet
+    case GcSideBarBtnId::APPS_BTN: break; // handled by sidebarClicked
 
     default: break;
     }
