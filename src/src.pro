@@ -553,6 +553,24 @@ LEXSOURCES  += Core/DataFilter.l \
                Train/WorkoutFilter.l \
                Train/TrainerDayAPIQuery.l
 
+# qmake's yacc rules clean the *_yacc outputs but not the temporary *.tab.{h,c}
+# files. When stale *.tab.h symlinks exist, parallel/full builds can end up
+# moving a generated file onto itself. Clean those temporary yacc artifacts
+# before regeneration.
+YACC_TAB_ARTIFACTS = DataFilter.tab.h DataFilter.tab.c \
+                     JsonRideFile.tab.h JsonRideFile.tab.c \
+                     RideDB.tab.h RideDB.tab.c \
+                     WorkoutFilter.tab.h WorkoutFilter.tab.c \
+                     TrainerDayAPIQuery.tab.h TrainerDayAPIQuery.tab.c
+
+yacc_cleanup_tabfiles.target = yacc_cleanup_tabfiles
+yacc_cleanup_tabfiles.commands = -$(DEL_FILE) $$YACC_TAB_ARTIFACTS
+QMAKE_EXTRA_TARGETS += yacc_cleanup_tabfiles
+yacc_decl.depends += yacc_cleanup_tabfiles
+yacc_impl.depends += yacc_cleanup_tabfiles
+compiler_yacc_decl_make_all.depends += yacc_cleanup_tabfiles
+compiler_yacc_impl_make_all.depends += yacc_cleanup_tabfiles
+
 # Fix parallel build races (YACC headers must exist before LEX runs)
 compiler_lex_make_all.depends += compiler_yacc_decl_make_all
 
@@ -653,7 +671,7 @@ HEADERS += Train/AddDeviceWizard.h Train/CalibrationData.h Train/ComputrainerCon
            Train/RealtimeData.h Train/RealtimePlot.h Train/RealtimePlotWindow.h Train/RemoteControl.h Train/SpinScanPlot.h \
            Train/SpinScanPlotWindow.h Train/SpinScanPolarPlot.h Train/GarminServiceHelper.h Train/PhysicsUtility.h Train/BicycleSim.h \
            Train/PolynomialRegression.h Train/MultiRegressionizer.h Train/StravaRoutesDownload.h \
-           Train/VideoSyncFileBase.h Train/ErgFileBase.h \
+           Train/VideoSyncFileBase.h Train/ErgFileBase.h Train/WorkoutDraft.h Train/WorkoutGenerationService.h \
            Train/ModelFilter.h Train/MultiFilterProxyModel.h Train/WorkoutFilter.h Train/FilterEditor.h \
            Train/WorkoutFilterBox.h Train/TagBar.h Train/Taggable.h Train/TagStore.h Train/TagWidget.h \
            Train/TrainerDayAPIQuery.h Train/TrainerDayAPIDialog.h Train/ElevationChartWindow.h
@@ -770,7 +788,7 @@ SOURCES += Train/AddDeviceWizard.cpp Train/CalibrationData.cpp Train/Computraine
            Train/RealtimeData.cpp Train/RealtimePlot.cpp Train/RealtimePlotWindow.cpp Train/RemoteControl.cpp Train/SpinScanPlot.cpp \
            Train/SpinScanPlotWindow.cpp Train/SpinScanPolarPlot.cpp Train/GarminServiceHelper.cpp Train/PhysicsUtility.cpp Train/BicycleSim.cpp \
            Train/PolynomialRegression.cpp Train/StravaRoutesDownload.cpp \
-           Train/VideoSyncFileBase.cpp Train/ErgFileBase.cpp \
+           Train/VideoSyncFileBase.cpp Train/ErgFileBase.cpp Train/WorkoutDraft.cpp Train/WorkoutGenerationService.cpp \
            Train/ModelFilter.cpp Train/MultiFilterProxyModel.cpp Train/WorkoutFilter.cpp Train/FilterEditor.cpp \
            Train/WorkoutFilterBox.cpp Train/TagBar.cpp Train/TagWidget.cpp \
            Train/TrainerDayAPIQuery.cpp Train/TrainerDayAPIDialog.cpp Train/ElevationChartWindow.cpp
